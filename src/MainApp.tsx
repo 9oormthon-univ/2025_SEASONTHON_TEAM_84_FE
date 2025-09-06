@@ -4,6 +4,7 @@ import { CategoryFilter } from "./components/CategoryFilter";
 import { MapView } from "./components/MapView";
 import { StoreList } from "./components/StoreList";
 import { ReviewModal } from "./components/ReviewModal";
+import { LoginModal } from "./components/LoginModal";
 import { IntroPage } from "./components/IntroPage";
 import { ScrapListPage } from "./components/ScrapListPage";
 import { mockStores } from "./data/mockStores";
@@ -17,6 +18,8 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // 위치 정보 가져오기
   useEffect(() => {
@@ -109,9 +112,44 @@ export default function App() {
     return Math.round((sum / reviews.length) * 10) / 10;
   };
 
+  // 탭 변경 핸들러 (로그인 체크 포함)
+  const handleTabChange = (tab: 'intro' | 'map' | 'scrap') => {
+    if ((tab === 'map' || tab === 'scrap') && !isLoggedIn) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setActiveTab(tab);
+  };
+
+  // 로그인 핸들러
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    toast.success("카카오톡으로 로그인되었습니다!");
+  };
+
+  // 로그아웃 핸들러
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setActiveTab('intro');
+    toast.success("로그아웃되었습니다.");
+  };
+
+  // 로그인 모달에서 로그인 후 원하던 탭으로 이동
+  const handleLoginAndNavigate = () => {
+    handleLogin();
+    // 현재는 지도로 이동 (원하는 탭 기억하도록 개선 가능)
+    setActiveTab('map');
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header 
+        activeTab={activeTab} 
+        onTabChange={handleTabChange}
+        isLoggedIn={isLoggedIn}
+        onLoginClick={() => setIsLoginModalOpen(true)}
+        onLogoutClick={handleLogout}
+      />
       
       {activeTab === 'intro' && <IntroPage />}
       
@@ -164,6 +202,12 @@ export default function App() {
           setSelectedStore(null);
         }}
         onSubmitReview={handleSubmitReview}
+      />
+
+      <LoginModal 
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLogin={handleLoginAndNavigate}
       />
       
       <Toaster position="top-right" />

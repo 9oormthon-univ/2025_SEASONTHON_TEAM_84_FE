@@ -1,11 +1,15 @@
 import { Button } from "./ui/button";
+import { LogIn, LogOut } from "lucide-react";
 
 interface HeaderProps {
   activeTab: 'intro' | 'map' | 'scrap';
   onTabChange: (tab: 'intro' | 'map' | 'scrap') => void;
+  isLoggedIn: boolean;
+  onLoginClick: () => void;
+  onLogoutClick: () => void;
 }
 
-export function Header({ activeTab, onTabChange }: HeaderProps) {
+export function Header({ activeTab, onTabChange, isLoggedIn, onLoginClick, onLogoutClick }: HeaderProps) {
   return (
     <header className="w-full bg-white border-b border-border px-6 py-4">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -40,6 +44,26 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
           >
             스크랩 리스트
           </Button>
+          
+          {isLoggedIn ? (
+            <Button
+              variant="outline"
+              onClick={onLogoutClick}
+              className="px-4 py-2 flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              로그아웃
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              onClick={onLoginClick}
+              className="px-4 py-2 flex items-center gap-2"
+            >
+              <LogIn className="w-4 h-4" />
+              로그인
+            </Button>
+          )}
         </nav>
       </div>
     </header>
