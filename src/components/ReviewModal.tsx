@@ -22,7 +22,8 @@ export function ReviewModal({ store, isOpen, onClose, onSubmitReview }: ReviewMo
   const handleSubmit = () => {
     if (!store || !author.trim() || !content.trim()) return;
     
-    onSubmitReview(store.id, {
+    onSubmitReview(store.username, {
+      username: author.trim(),
       author: author.trim(),
       rating,
       content: content.trim()
