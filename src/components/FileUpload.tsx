@@ -23,7 +23,7 @@ const FileUpload: React.FC = () => {
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload-csv", {
+      const response = await fetch("https://qualified-swordtail-goormhack84-4dc9e8b7.koyeb.app/init/stores/upload", {
         method: "POST",
         body: formData,
       });
