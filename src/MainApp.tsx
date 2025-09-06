@@ -65,24 +65,70 @@ export default function App() {
     }
   }, []);
 
-  // 위치 정보 가져오기 (기존 코드)
+  // 위치 정보 가져오기 (개선된 버전)
   useEffect(() => {
-    if (navigator.geolocation) {
+    const getCurrentLocation = () => {
+      if (!navigator.geolocation) {
+        console.log("Geolocation이 지원되지 않는 브라우저입니다.");
+        setUserLocation({ lat: 37.5665, lng: 126.9780 });
+        toast.info("위치 서비스가 지원되지 않아 기본 위치로 설정되었습니다.");
+        return;
+      }
+
+      // 고정밀도 위치 옵션
+      const options = {
+        enableHighAccuracy: true, // GPS 사용하여 더 정확한 위치
+        timeout: 10000, // 10초 타임아웃
+        maximumAge: 300000 // 5분 동안 캐시된 위치 사용
+      };
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          
+          console.log(`위치 정보: 위도 ${latitude}, 경도 ${longitude}, 정확도 ${accuracy}m`);
+          
+          // 정확도가 너무 낮으면 경고
+          if (accuracy > 1000) {
+            toast.warning(`위치 정확도가 낮습니다 (±${Math.round(accuracy)}m). WiFi나 GPS를 확인해주세요.`);
+          }
+          
           setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
+            lat: latitude,
+            lng: longitude,
           });
+          
           toast.success("현재 위치를 찾았습니다!");
         },
         (error) => {
-          console.log("위치 정보를 가져올 수 없습니다:", error);
+          let errorMessage = "";
+          
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = "위치 접근이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = "위치 정보를 사용할 수 없습니다.";
+              break;
+            case error.TIMEOUT:
+              errorMessage = "위치 정보 요청이 시간 초과되었습니다.";
+              break;
+            default:
+              errorMessage = "알 수 없는 오류가 발생했습니다.";
+              break;
+          }
+          
+          console.error("위치 정보 오류:", error.message, errorMessage);
+          
+          // 폴백 위치 (서울 시청)
           setUserLocation({ lat: 37.5665, lng: 126.9780 });
-          toast.info("기본 위치(서울 시청)로 설정되었습니다.");
-        }
+          toast.info(`${errorMessage} 기본 위치(서울 시청)로 설정되었습니다.`);
+        },
+        options
       );
-    }
+    };
+
+    getCurrentLocation();
   }, []);
 
   // 사용자 위치가 확정되면 근처 가게 데이터 가져오기
@@ -145,6 +191,30 @@ export default function App() {
       );
     }
   };
+
+  // 즐겨찾기 토글
+  const handleFavoriteToggle = useCallback((storeId: string) => {
+    if (!isLoggedIn) {
+      toast.error("즐겨찾기를 사용하려면 로그인이 필요합니다.");
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    setStores(prev => prev.map(store =>
+      store.id === storeId
+        ? { ...store, isFavorite: !store.isFavorite }
+        : store
+    ));
+
+    const store = stores.find(s => s.id === storeId);
+    if (store) {
+      toast.success(
+        store.isFavorite
+          ? `${store.name}을(를) 즐겨찾기에서 제거했습니다.`
+          : `${store.name}을(를) 즐겨찾기에 추가했습니다.`
+      );
+    }
+  }, [stores, isLoggedIn]);
 
   const handleShowLocation = (store: Store) => {
     toast.info(`${store.name}의 위치를 지도에 표시합니다.`);
@@ -302,6 +372,7 @@ export default function App() {
                   <StoreList
                     stores={sortedStores}
                     onScrapToggle={handleScrapToggle}
+                    onFavoriteToggle={handleFavoriteToggle}
                     onShowLocation={handleShowLocation}
                     onWriteReview={handleWriteReview}
                   />
@@ -316,6 +387,7 @@ export default function App() {
         <ScrapListPage
           scrapedStores={scrapedStores}
           onScrapToggle={handleScrapToggle}
+          onFavoriteToggle={handleFavoriteToggle}
           onShowLocation={handleShowLocation}
           onWriteReview={handleWriteReview}
         />
@@ -329,7 +401,9 @@ export default function App() {
           setSelectedStoreId(null);
         }}
         onWriteReview={handleWriteReviewFromDetail}
+        onFavoriteToggle={handleFavoriteToggle}
         isLoggedIn={isLoggedIn}
+        isFavorite={selectedStoreId ? stores.find(s => parseInt(s.id) === selectedStoreId)?.isFavorite || false : false}
       />
 
       <ReviewWriteModal
@@ -362,7 +436,16 @@ export default function App() {
         onSignUp={handleSignUp}
       />
 
-      <Toaster position="top-right" />
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          style: {
+            marginTop: '60px', // 헤더 아래로 이동
+          },
+          duration: 4000,
+          dismissible: true, // X 버튼 표시
+        }}
+      />
     </div>
   );
 }

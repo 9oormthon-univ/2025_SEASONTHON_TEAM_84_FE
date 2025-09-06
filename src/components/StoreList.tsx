@@ -4,11 +4,12 @@ import { StoreCard } from "./StoreCard";
 interface StoreListProps {
   stores: Store[];
   onScrapToggle: (storeId: string) => void;
+  onFavoriteToggle: (storeId: string) => void;
   onShowLocation: (store: Store) => void;
   onWriteReview: (store: Store) => void;
 }
 
-export function StoreList({ stores, onScrapToggle, onShowLocation, onWriteReview }: StoreListProps) {
+export function StoreList({ stores, onScrapToggle, onFavoriteToggle, onShowLocation, onWriteReview }: StoreListProps) {
   if (stores.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -32,6 +33,7 @@ export function StoreList({ stores, onScrapToggle, onShowLocation, onWriteReview
             key={store.id}
             store={store}
             onScrapToggle={onScrapToggle}
+            onFavoriteToggle={onFavoriteToggle}
             onShowLocation={onShowLocation}
             onWriteReview={onWriteReview}
           />

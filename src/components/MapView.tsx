@@ -14,19 +14,59 @@ declare global {
 }
 
 export function MapView({ stores, userLocation, onStoreSelect }: MapViewProps) {
-  const mapContainerRef = useRef<HTMLDivElement>(null); // 지도를 담을 div의 ref
-  const mapInstanceRef = useRef<any>(null); // 생성된 지도 인스턴스를 담을 ref
-  const userMarkerRef = useRef<any>(null); // 사용자 위치 마커를 담을 ref
-  const storeMarkersRef = useRef<Map<string, any>>(new Map()); // 가게 마커들을 Map으로 관리
-  const isMapReadyRef = useRef<boolean>(false); // 지도 준비 상태
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const userMarkerRef = useRef<any>(null);
+  const storeMarkersRef = useRef<Map<string, any>>(new Map());
+  const isMapReadyRef = useRef<boolean>(false);
+  const pendingStoresRef = useRef<Store[]>([]); // 지도 준비 전 대기 중인 stores
 
   // 스토어 선택 핸들러 메모이제이션
   const handleStoreSelect = useCallback((store: Store) => {
     onStoreSelect(store);
   }, [onStoreSelect]);
 
-  // 스토어 데이터 메모이제이션 (성능 최적화)
-  const memoizedStores = useMemo(() => stores, [stores]);
+  // 마커 생성 함수 (최적화)
+  const createMarkers = useCallback((storesToCreate: Store[]) => {
+    if (!mapInstanceRef.current || !window.kakao || !isMapReadyRef.current) {
+      pendingStoresRef.current = storesToCreate;
+      return;
+    }
+
+    const { kakao } = window;
+    const currentMarkers = storeMarkersRef.current;
+    
+    // 현재 스토어 ID 세트
+    const currentStoreIds = new Set(storesToCreate.map(store => store.id));
+    
+    // 1. 더 이상 존재하지 않는 마커들 제거
+    for (const [storeId, marker] of currentMarkers.entries()) {
+      if (!currentStoreIds.has(storeId)) {
+        marker.setMap(null);
+        currentMarkers.delete(storeId);
+      }
+    }
+
+    // 2. 새로운 스토어들의 마커 일괄 생성
+    const markersToAdd = storesToCreate.filter(store => !currentMarkers.has(store.id));
+    
+    markersToAdd.forEach((store) => {
+      const marker = new kakao.maps.Marker({
+        position: new kakao.maps.LatLng(store.lat, store.lng),
+        clickable: true,
+      });
+
+      kakao.maps.event.addListener(marker, 'click', () => {
+        handleStoreSelect(store);
+      });
+
+      marker.setMap(mapInstanceRef.current);
+      currentMarkers.set(store.id, marker);
+    });
+
+    // 대기 중인 stores 초기화
+    pendingStoresRef.current = [];
+  }, [handleStoreSelect]);
 
   // 1. 지도 생성 (최초 한 번만 실행)
   useEffect(() => {
@@ -39,7 +79,7 @@ export function MapView({ stores, userLocation, onStoreSelect }: MapViewProps) {
         level: 5,
       };
 
-      // 지도 인스턴스 생성 및 ref에 저장
+      // 지도 인스턴스 생성
       const map = new kakao.maps.Map(mapContainerRef.current, mapOption);
       mapInstanceRef.current = map;
 
@@ -47,7 +87,7 @@ export function MapView({ stores, userLocation, onStoreSelect }: MapViewProps) {
       const zoomControl = new kakao.maps.ZoomControl();
       map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
-      // 사용자 위치 마커 생성 및 ref에 저장
+      // 사용자 위치 마커 생성
       const userMarker = new kakao.maps.Marker({
         position: new kakao.maps.LatLng(userLocation.lat, userLocation.lng),
         image: new kakao.maps.MarkerImage(
@@ -58,10 +98,15 @@ export function MapView({ stores, userLocation, onStoreSelect }: MapViewProps) {
       userMarker.setMap(map);
       userMarkerRef.current = userMarker;
       
-      // 지도 준비 완료 표시
+      // 지도 준비 완료 후 대기 중인 stores 처리
       isMapReadyRef.current = true;
+      
+      // 대기 중인 stores가 있으면 즉시 마커 생성
+      if (pendingStoresRef.current.length > 0) {
+        createMarkers(pendingStoresRef.current);
+      }
     });
-  }, [userLocation]); // userLocation이 변경될 때만 재실행
+  }, [userLocation, createMarkers]);
 
   // 2. 사용자 위치가 변경되면 지도 중심과 마커 위치를 이동
   useEffect(() => {
@@ -76,45 +121,10 @@ export function MapView({ stores, userLocation, onStoreSelect }: MapViewProps) {
     userMarkerRef.current.setPosition(newPosition);
   }, [userLocation]);
 
-  // 3. 가게 목록이 변경되면 마커를 효율적으로 업데이트
+  // 3. stores가 변경되면 마커 업데이트
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.kakao || !isMapReadyRef.current) return;
-
-    const { kakao } = window;
-    const currentMarkers = storeMarkersRef.current;
-    
-    // 현재 스토어 ID 세트
-    const currentStoreIds = new Set(memoizedStores.map(store => store.id));
-    
-    // 1. 더 이상 존재하지 않는 마커들 제거
-    for (const [storeId, marker] of currentMarkers.entries()) {
-      if (!currentStoreIds.has(storeId)) {
-        marker.setMap(null);
-        currentMarkers.delete(storeId);
-      }
-    }
-
-    // 2. 새로운 스토어들의 마커 생성
-    memoizedStores.forEach((store) => {
-      if (!currentMarkers.has(store.id)) {
-        const marker = new kakao.maps.Marker({
-          position: new kakao.maps.LatLng(store.lat, store.lng),
-          clickable: true,
-        });
-
-        // 클릭 이벤트 리스너 추가
-        kakao.maps.event.addListener(marker, 'click', () => {
-          handleStoreSelect(store);
-        });
-
-        // 지도에 마커 표시
-        marker.setMap(mapInstanceRef.current);
-        
-        // Map에 마커 저장
-        currentMarkers.set(store.id, marker);
-      }
-    });
-  }, [memoizedStores, handleStoreSelect]); // 최적화된 의존성
+    createMarkers(stores);
+  }, [stores, createMarkers]);
 
   return (
     <div className="w-full h-[500px] bg-gray-100 rounded-lg border border-border relative">

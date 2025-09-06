@@ -4,6 +4,7 @@ import { StoreCard } from "./StoreCard";
 interface ScrapListPageProps {
   scrapedStores: Store[];
   onScrapToggle: (storeId: string) => void;
+  onFavoriteToggle: (storeId: string) => void;
   onShowLocation: (store: Store) => void;
   onWriteReview: (store: Store) => void;
 }
@@ -11,6 +12,7 @@ interface ScrapListPageProps {
 export function ScrapListPage({ 
   scrapedStores, 
   onScrapToggle, 
+  onFavoriteToggle,
   onShowLocation, 
   onWriteReview 
 }: ScrapListPageProps) {
@@ -49,6 +51,7 @@ export function ScrapListPage({
               key={store.id}
               store={store}
               onScrapToggle={onScrapToggle}
+              onFavoriteToggle={onFavoriteToggle}
               onShowLocation={onShowLocation}
               onWriteReview={onWriteReview}
             />

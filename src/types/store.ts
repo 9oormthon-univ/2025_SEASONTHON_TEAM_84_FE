@@ -13,6 +13,7 @@ export interface Store {
   latitude: number;
   longitude: number;
   isScraped: boolean;
+  isFavorite: boolean; // 즐겨찾기 상태 추가
   reviews: Review[];
   lat: number; // 위도
   lng: number; // 경도
