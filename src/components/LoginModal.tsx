@@ -10,110 +10,133 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (user: User) => void;
-  users: User[];
-  // User의 모든 정보가 form에서 오므로 User 타입을 직접 사용합니다.
   onSignUp: (userData: User) => void;
 }
 
-export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginModalProps) {
-  // 로그인 폼 상태
+// API 기본 URL을 상수로 정의합니다.
+const API_BASE_URL = "https://qualified-swordtail-goormhack84-4dc9e8b7.koyeb.app";
+
+export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalProps) {
   const [loginData, setLoginData] = useState({
-    id: '',
+    username: '',
     password: ''
   });
-
-  // 회원가입 폼 상태
   const [signupData, setSignupData] = useState({
-    id: '',
+    username: '',
     password: '',
     confirmPassword: '',
     nickname: ''
   });
-
-  // 에러 상태
   const [loginError, setLoginError] = useState('');
   const [signupError, setSignupError] = useState('');
 
-  // 로그인 처리
-  const handleLogin = (e: React.FormEvent) => {
+  // 로그인 처리 함수 (fetch API 사용)
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
-    if (!loginData.id || !loginData.password) {
+    if (!loginData.username || !loginData.password) {
       setLoginError('아이디와 비밀번호를 모두 입력해주세요.');
       return;
     }
 
-    const user = users.find(u => 
-      u.id === loginData.id && u.password === loginData.password
-    );
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: loginData.username,
+          password: loginData.password,
+        }),
+      });
 
-    if (user) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || '로그인에 실패했습니다.');
+      }
+      
+      const user = data.user;
+      const accessToken = data.accessToken;
+
+      if (accessToken) {
+        localStorage.setItem('accessToken', accessToken);
+      }
+
       onLogin(user);
       onClose();
-      setLoginData({ id: '', password: '' });
-    } else {
-      setLoginError('아이디 또는 비밀번호가 올바르지 않습니다.');
+      setLoginData({ username: '', password: '' });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.';
+      setLoginError(errorMessage);
+      console.error("Login failed:", error);
     }
   };
 
-  // 회원가입 처리
-  const handleSignUp = (e: React.FormEvent) => {
+  // 회원가입 처리 함수 (fetch API 사용)
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError('');
 
-    if (!signupData.id || !signupData.password || !signupData.nickname) {
+    if (!signupData.username || !signupData.password || !signupData.nickname) {
       setSignupError('모든 필드를 입력해주세요.');
       return;
     }
-
     if (signupData.password !== signupData.confirmPassword) {
       setSignupError('비밀번호가 일치하지 않습니다.');
       return;
     }
-    
     if (signupData.password.length < 4) {
       setSignupError('비밀번호는 4자 이상이어야 합니다.');
       return;
     }
 
-    // 중복 아이디 체크
-    const existingUser = users.find(u => u.id === signupData.id);
-    if (existingUser) {
-      setSignupError('이미 사용 중인 아이디입니다.');
-      return;
-    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: signupData.username,
+          password: signupData.password,
+          nickname: signupData.nickname,
+        }),
+      });
 
-    // 중복 닉네임 체크
-    const existingNickname = users.find(u => u.nickname === signupData.nickname);
-    if (existingNickname) {
-      setSignupError('이미 사용 중인 닉네임입니다.');
-      return;
-    }
+      const data = await response.json();
 
-    // 회원가입 및 자동 로그인을 위한 새 유저 객체 생성
-    const newUser: User = {
-      id: signupData.id,
-      password: signupData.password,
-      nickname: signupData.nickname
-    };
-    
-    onSignUp(newUser);
-    onLogin(newUser);
-    
-    onClose();
-    setSignupData({
-      id: '',
-      password: '',
-      confirmPassword: '',
-      nickname: ''
-    });
+      if (!response.ok) {
+        throw new Error(data.message || '회원가입에 실패했습니다.');
+      }
+      
+      const newUser = data.user;
+      const accessToken = data.accessToken;
+
+      if (accessToken) {
+        localStorage.setItem('accessToken', accessToken);
+      }
+      
+      onSignUp(newUser);
+      onLogin(newUser); // 회원가입 후 자동 로그인
+      
+      onClose();
+      setSignupData({ username: '', password: '', confirmPassword: '', nickname: '' });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '회원가입 중 오류가 발생했습니다.';
+      setSignupError(errorMessage);
+      console.error("Signup failed:", error);
+    }
   };
 
   const handleClose = () => {
     onClose();
-    setLoginData({ id: '', password: '' });
-    setSignupData({ id: '', password: '', confirmPassword: '', nickname: '' });
+    setLoginData({ username: '', password: '' });
+    setSignupData({ username: '', password: '', confirmPassword: '', nickname: '' });
     setLoginError('');
     setSignupError('');
   };
@@ -141,8 +164,8 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
                   id="login-id"
                   type="text"
                   placeholder="아이디를 입력하세요"
-                  value={loginData.id}
-                  onChange={(e) => setLoginData(prev => ({ ...prev, id: e.target.value }))}
+                  value={loginData.username}
+                  onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
                 />
               </div>
               
@@ -158,7 +181,7 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
               </div>
               
               {loginError && (
-                <p className="text-sm text-destructive">{loginError}</p>
+                <p className="text-sm text-red-500">{loginError}</p>
               )}
               
               <Button type="submit" className="w-full">
@@ -175,8 +198,8 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
                   id="signup-id"
                   type="text"
                   placeholder="아이디를 입력하세요"
-                  value={signupData.id}
-                  onChange={(e) => setSignupData(prev => ({ ...prev, id: e.target.value }))}
+                  value={signupData.username}
+                  onChange={(e) => setSignupData(prev => ({ ...prev, username: e.target.value }))}
                 />
               </div>
               
@@ -214,7 +237,7 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
               </div>
               
               {signupError && (
-                <p className="text-sm text-destructive">{signupError}</p>
+                <p className="text-sm text-red-500">{signupError}</p>
               )}
               
               <Button type="submit" className="w-full">
@@ -227,3 +250,4 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
     </Dialog>
   );
 }
+

@@ -1,5 +1,5 @@
 export interface Store {
-  id: string;
+  username: string;
   name: string;
   category: string;
   address: string;
@@ -18,13 +18,13 @@ export interface Store {
 }
 
 export interface User {
-  id: string;
+  username: string;
   password?: string;
   nickname: string;
 }
 
 export interface Review {
-  id: string;
+  username: string;
   storeId: string;
   author: string;
   rating: number;

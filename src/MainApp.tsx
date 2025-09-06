@@ -1,3 +1,5 @@
+// App.tsx
+
 import { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { CategoryFilter } from "./components/CategoryFilter";
@@ -12,6 +14,27 @@ import { Store, Review, Category, User } from "./types/store";
 import { toast, Toaster } from "sonner";
 import { getNearbyStores, filterStoresByCategory } from "./services/storeService";
 
+// =================================================================
+// 1. [추가] 두 좌표 간의 거리를 계산하는 헬퍼 함수
+// =================================================================
+const getDistanceFromLatLonInKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // 지구의 반지름 (km)
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // 최종 거리 (km)
+  return d;
+}
+
+const deg2rad = (deg: number): number => {
+  return deg * (Math.PI / 180);
+}
+
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<'intro' | 'map' | 'scrap'>('intro');
   const [selectedCategory, setSelectedCategory] = useState<Category>('전체');
@@ -24,7 +47,7 @@ export default function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  // 위치 정보 가져오기
+  // 위치 정보 가져오기 (기존 코드)
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -37,9 +60,8 @@ export default function App() {
         },
         (error) => {
           console.log("위치 정보를 가져올 수 없습니다:", error);
-          // 서울 강남구 기본 위치 설정
           setUserLocation({ lat: 37.5665, lng: 126.9780 });
-          toast.info("기본 위치(강남구)로 설정되었습니다.");
+          toast.info("기본 위치(서울 시청)로 설정되었습니다.");
         }
       );
     }
@@ -82,69 +104,78 @@ export default function App() {
   // 거리순 정렬 (이미 API에서 정렬되어 오지만 안전하게 한번 더)
   const sortedStores = filteredStores.sort((a, b) => a.distance - b.distance);
 
-  // 스크랩된 가게들
   const scrapedStores = stores.filter(store => store.isScraped);
 
   // 스크랩 토글
-  const handleScrapToggle = (storeId: string) => {
-    setStores(prev => prev.map(store => 
-      store.id === storeId 
+  const handleScrapToggle = (storeUsername: string) => {
+    setStores(prev => prev.map(store =>
+      store.username === storeUsername
         ? { ...store, isScraped: !store.isScraped }
         : store
     ));
-    
-    const store = stores.find(s => s.id === storeId);
+
+    const store = stores.find(s => s.username === storeUsername);
     if (store) {
       toast.success(
-        store.isScraped 
+        store.isScraped
           ? `${store.name}을(를) 스크랩에서 제거했습니다.`
           : `${store.name}을(를) 스크랩했습니다.`
       );
     }
   };
 
-  // 위치 보기
   const handleShowLocation = (store: Store) => {
     toast.info(`${store.name}의 위치를 지도에 표시합니다.`);
-    // 실제로는 지도 중심을 해당 가게로 이동
   };
 
   // 리뷰 작성 모달 열기
   const handleWriteReview = (store: Store) => {
+    if (!isLoggedIn) {
+      toast.error("리뷰를 작성하려면 로그인이 필요합니다.");
+      setIsLoginModalOpen(true);
+      return;
+    }
     setSelectedStore(store);
     setIsReviewModalOpen(true);
   };
 
   // 리뷰 제출
-  const handleSubmitReview = (storeId: string, reviewData: Omit<Review, 'id' | 'storeId' | 'createdAt'>) => {
+  const handleSubmitReview = (storeUsername: string, reviewContent: { rating: number; content: string; }) => {
+    if (!currentUser) {
+      toast.error("리뷰를 등록하려면 로그인이 필요합니다.");
+      setIsLoginModalOpen(true);
+      return;
+    }
+
     const newReview: Review = {
-      id: `r${Date.now()}`,
-      storeId,
-      ...reviewData,
+      username: currentUser.username,
+      author: currentUser.nickname,
+      rating: reviewContent.rating,
+      content: reviewContent.content,
+      storeId: storeUsername,
       createdAt: new Date().toISOString().split('T')[0]
     };
 
-    setStores(prev => prev.map(store => 
-      store.id === storeId 
-        ? { 
-            ...store, 
-            reviews: [...store.reviews, newReview],
-            rating: calculateNewRating([...store.reviews, newReview])
-          }
+    setStores(prev => prev.map(store =>
+      store.username === storeUsername
+        ? {
+          ...store,
+          reviews: [...store.reviews, newReview],
+          rating: calculateNewRating([...store.reviews, newReview])
+        }
         : store
     ));
 
     toast.success("리뷰가 등록되었습니다!");
   };
 
-  // 평점 재계산
+
   const calculateNewRating = (reviews: Review[]): number => {
     if (reviews.length === 0) return 0;
     const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
     return Math.round((sum / reviews.length) * 10) / 10;
   };
 
-  // 탭 변경 핸들러 (로그인 체크 포함)
   const handleTabChange = (tab: 'intro' | 'map' | 'scrap') => {
     if ((tab === 'map' || tab === 'scrap') && !isLoggedIn) {
       setIsLoginModalOpen(true);
@@ -153,14 +184,12 @@ export default function App() {
     setActiveTab(tab);
   };
 
-  // 로그인 핸들러
   const handleLogin = (user: User) => {
     setIsLoggedIn(true);
     setCurrentUser(user);
     toast.success(`${user.nickname}님, 환영합니다!`);
   };
 
-  // 로그아웃 핸들러
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
@@ -169,57 +198,48 @@ export default function App() {
   };
 
   // 회원가입 핸들러
-  const handleSignUp = (userData: Omit<User, 'id' | 'createdAt'>) => {
-    const newUser: User = {
-      id: `u${Date.now()}`,
-      ...userData,
-      createdAt: new Date().toISOString()
-    };
-    
+  const handleSignUp = (userData: User) => {
+    const newUser: User = userData;
     setUsers(prev => [...prev, newUser]);
     toast.success("회원가입이 완료되었습니다!");
   };
 
-  // 로그인 모달에서 로그인 후 원하던 탭으로 이동
   const handleLoginAndNavigate = (user: User) => {
     handleLogin(user);
-    // 현재는 지도로 이동 (원하는 탭 기억하도록 개선 가능)
     setActiveTab('map');
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        activeTab={activeTab} 
+      <Header
+        activeTab={activeTab}
         onTabChange={handleTabChange}
         isLoggedIn={isLoggedIn}
         userNickname={currentUser?.nickname}
         onLoginClick={() => setIsLoginModalOpen(true)}
         onLogoutClick={handleLogout}
       />
-      
+
       {activeTab === 'intro' && <IntroPage />}
-      
+
       {activeTab === 'map' && (
         <>
-          <CategoryFilter 
+          <CategoryFilter
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
           />
-          
           <div className="w-full px-6 py-6">
             <div className="max-w-7xl mx-auto">
               <div className="space-y-6">
                 <div>
-                  <MapView 
+                  <MapView
                     stores={sortedStores}
                     userLocation={userLocation}
                     onStoreSelect={handleWriteReview}
                   />
                 </div>
-                
                 <div>
-                  <StoreList 
+                  <StoreList
                     stores={sortedStores}
                     onScrapToggle={handleScrapToggle}
                     onShowLocation={handleShowLocation}
@@ -231,17 +251,17 @@ export default function App() {
           </div>
         </>
       )}
-      
+
       {activeTab === 'scrap' && (
-        <ScrapListPage 
+        <ScrapListPage
           scrapedStores={scrapedStores}
           onScrapToggle={handleScrapToggle}
           onShowLocation={handleShowLocation}
           onWriteReview={handleWriteReview}
         />
       )}
-      
-      <ReviewModal 
+
+      <ReviewModal
         store={selectedStore}
         isOpen={isReviewModalOpen}
         onClose={() => {
@@ -251,14 +271,14 @@ export default function App() {
         onSubmitReview={handleSubmitReview}
       />
 
-      <LoginModal 
+      <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLogin={handleLoginAndNavigate}
         users={users}
         onSignUp={handleSignUp}
       />
-      
+
       <Toaster position="top-right" />
     </div>
   );
