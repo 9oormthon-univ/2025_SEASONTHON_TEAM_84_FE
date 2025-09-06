@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
-import { Star, Phone, MapPin, Clock, Edit3 } from "lucide-react";
+import { Star, Phone, MapPin, Clock, Edit3, Heart, HeartOff } from "lucide-react";
 import { StoreDetailResponse, fetchStoreDetail } from "../services/api";
 import { toast } from "sonner";
 
@@ -12,7 +12,9 @@ interface StoreDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onWriteReview: (storeId: number) => void;
+  onFavoriteToggle: (storeId: string) => void;
   isLoggedIn: boolean;
+  isFavorite: boolean;
 }
 
 export function StoreDetailModal({ 
@@ -20,7 +22,9 @@ export function StoreDetailModal({
   isOpen, 
   onClose, 
   onWriteReview, 
-  isLoggedIn 
+  onFavoriteToggle,
+  isLoggedIn,
+  isFavorite
 }: StoreDetailModalProps) {
   const [storeDetail, setStoreDetail] = useState<StoreDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -89,9 +93,24 @@ export function StoreDetailModal({
         ) : storeDetail ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">
-                {storeDetail.storeName}
-              </DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-xl font-bold">
+                  {storeDetail.storeName}
+                </DialogTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onFavoriteToggle(storeDetail.storeId.toString())}
+                  className="p-2"
+                  title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+                >
+                  {isFavorite ? (
+                    <Heart className="w-6 h-6 fill-red-500 text-red-500" />
+                  ) : (
+                    <HeartOff className="w-6 h-6 text-gray-400 hover:text-red-400" />
+                  )}
+                </Button>
+              </div>
             </DialogHeader>
             
             <div className="space-y-6">

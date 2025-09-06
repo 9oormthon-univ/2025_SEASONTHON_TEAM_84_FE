@@ -1,17 +1,18 @@
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Star, MapPin, Phone, Heart, HeartOff } from "lucide-react";
+import { Star, MapPin, Phone, Heart, HeartOff, Bookmark, BookmarkCheck } from "lucide-react";
 import { Store } from "../types/store";
 
 interface StoreCardProps {
   store: Store;
   onScrapToggle: (storeId: string) => void;
+  onFavoriteToggle: (storeId: string) => void;
   onShowLocation: (store: Store) => void;
   onWriteReview: (store: Store) => void;
 }
 
-export function StoreCard({ store, onScrapToggle, onShowLocation, onWriteReview }: StoreCardProps) {
+export function StoreCard({ store, onScrapToggle, onFavoriteToggle, onShowLocation, onWriteReview }: StoreCardProps) {
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -31,21 +32,42 @@ export function StoreCard({ store, onScrapToggle, onShowLocation, onWriteReview 
               {store.category}
             </Badge>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onScrapToggle(store.id);
-            }}
-            className="p-2"
-          >
-            {store.isScraped ? (
-              <Heart className="w-5 h-5 fill-red-500 text-red-500" />
-            ) : (
-              <HeartOff className="w-5 h-5 text-gray-400" />
-            )}
-          </Button>
+          <div className="flex gap-1">
+            {/* 즐겨찾기 버튼 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFavoriteToggle(store.id);
+              }}
+              className="p-2"
+              title={store.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+            >
+              {store.isFavorite ? (
+                <Heart className="w-5 h-5 fill-red-500 text-red-500" />
+              ) : (
+                <HeartOff className="w-5 h-5 text-gray-400 hover:text-red-400" />
+              )}
+            </Button>
+            {/* 스크랩 버튼 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onScrapToggle(store.id);
+              }}
+              className="p-2"
+              title={store.isScraped ? "스크랩 해제" : "스크랩 추가"}
+            >
+              {store.isScraped ? (
+                <BookmarkCheck className="w-5 h-5 fill-blue-500 text-blue-500" />
+              ) : (
+                <Bookmark className="w-5 h-5 text-gray-400 hover:text-blue-400" />
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       

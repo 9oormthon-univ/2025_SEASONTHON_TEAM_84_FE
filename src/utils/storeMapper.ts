@@ -45,6 +45,7 @@ export const mapApiStoreToStore = (apiStore: ApiStore): Store => {
     lat: apiStore.address.latitude, // MapView에서 사용하는 필드
     lng: apiStore.address.longitude, // MapView에서 사용하는 필드
     isScraped: false, // 기본값, 실제로는 사용자별 스크랩 상태를 별도 관리
+    isFavorite: false, // 기본값, 실제로는 사용자별 즐겨찾기 상태를 별도 관리
     reviews: apiStore.reviewSummary.topReviews.map(mapApiReviewToReview),
   };
 };
