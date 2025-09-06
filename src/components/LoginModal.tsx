@@ -61,7 +61,7 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
       const user = data;
       const accessToken = data.accessToken;
 
-      if (!user || !user.username) {
+      if (!user || !user.nickname) {
         throw new Error('서버로부터 받은 사용자 정보가 올바르지 않습니다.');
       }
       if (!accessToken) {
@@ -120,7 +120,7 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
         throw new Error(data.message || '회원가입에 실패했습니다.');
       }
       
-      const newUser = data.user;
+      const newUser = data;
       const accessToken = data.accessToken;
 
       if (accessToken) {
@@ -257,6 +257,7 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
     </Dialog>
   );
 }
+
 
 
 
