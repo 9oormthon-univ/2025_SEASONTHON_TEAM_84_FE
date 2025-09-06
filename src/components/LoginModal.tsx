@@ -10,7 +10,7 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (user: User) => void;
-  onSignUp: (userData: User) => void;
+  onSignUp: (userData: User) => void; // 또는 프로젝트 타입에 맞게 조정
 }
 
 // API 기본 URL을 상수로 정의합니다.

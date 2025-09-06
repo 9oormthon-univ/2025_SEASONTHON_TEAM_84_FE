@@ -279,7 +279,6 @@ export default function App() {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLogin={handleLoginAndNavigate}
-        users={users}
         onSignUp={handleSignUp}
       />
 
