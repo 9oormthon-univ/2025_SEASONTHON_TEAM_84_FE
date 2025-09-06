@@ -61,6 +61,13 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
       const user = data.user;
       const accessToken = data.accessToken;
 
+      if (!user || !user.nickname) {
+        throw new Error('서버로부터 받은 사용자 정보가 올바르지 않습니다.');
+      }
+      if (!accessToken) {
+        throw new Error('인증 토큰을 받지 못했습니다.');
+      }
+
       if (accessToken) {
         localStorage.setItem('accessToken', accessToken);
       }
@@ -250,4 +257,5 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
     </Dialog>
   );
 }
+
 
