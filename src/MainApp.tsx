@@ -10,11 +10,12 @@ import { ScrapListPage } from "./components/ScrapListPage";
 import { mockStores } from "./data/mockStores";
 import { Store, Review, Category, User } from "./types/store";
 import { toast, Toaster } from "sonner";
+import { getNearbyStores, filterStoresByCategory } from "./services/storeService";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'intro' | 'map' | 'scrap'>('intro');
   const [selectedCategory, setSelectedCategory] = useState<Category>('전체');
-  const [stores, setStores] = useState<Store[]>(mockStores);
+  const [stores, setStores] = useState<Store[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -44,12 +45,41 @@ export default function App() {
     }
   }, []);
 
-  // 카테고리별 가게 필터링
-  const filteredStores = stores.filter(store => 
-    selectedCategory === '전체' || store.category === selectedCategory
-  );
+  // 사용자 위치가 확정되면 근처 가게 데이터 가져오기
+  useEffect(() => {
+    const fetchStores = async () => {
+      if (!userLocation) return;
+      
+      try {
+        const nearbyStores = await getNearbyStores(userLocation, {
+          limit: 50, // 더 많은 가게 데이터 가져오기
+          radiusKm: 10 // 10km 반경 내 검색
+        });
+        
+        setStores(nearbyStores);
+        
+        if (nearbyStores.length > 0) {
+          toast.success(`근처 가게 ${nearbyStores.length}개를 찾았습니다!`);
+        } else {
+          toast.info("근처에 등록된 가게가 없습니다.");
+          // 에러 발생 시 목업 데이터로 폴백
+          setStores(mockStores);
+        }
+      } catch (error) {
+        console.error('가게 데이터 로드 실패:', error);
+        toast.error("가게 정보를 불러오는데 실패했습니다. 기본 데이터를 표시합니다.");
+        // 에러 발생 시 목업 데이터로 폴백
+        setStores(mockStores);
+      }
+    };
 
-  // 거리순 정렬
+    fetchStores();
+  }, [userLocation]);
+
+  // 카테고리별 가게 필터링 (API 서비스 함수 사용)
+  const filteredStores = filterStoresByCategory(stores, selectedCategory);
+
+  // 거리순 정렬 (이미 API에서 정렬되어 오지만 안전하게 한번 더)
   const sortedStores = filteredStores.sort((a, b) => a.distance - b.distance);
 
   // 스크랩된 가게들
