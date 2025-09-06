@@ -1,11 +1,13 @@
 // App.tsx
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { MapView } from "./components/MapView";
 import { StoreList } from "./components/StoreList";
 import { ReviewModal } from "./components/ReviewModal";
+import { StoreDetailModal } from "./components/StoreDetailModal";
+import { ReviewWriteModal } from "./components/ReviewWriteModal";
 import { LoginModal } from "./components/LoginModal";
 import { IntroPage } from "./components/IntroPage";
 import { ScrapListPage } from "./components/ScrapListPage";
@@ -41,6 +43,11 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+  const [isStoreDetailModalOpen, setIsStoreDetailModalOpen] = useState(false);
+  const [isReviewWriteModalOpen, setIsReviewWriteModalOpen] = useState(false);
+  const [reviewStoreId, setReviewStoreId] = useState<number | null>(null);
+  const [reviewStoreName, setReviewStoreName] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -127,7 +134,23 @@ export default function App() {
     toast.info(`${store.name}의 위치를 지도에 표시합니다.`);
   };
 
-  // 리뷰 작성 모달 열기
+  // 마커 클릭 시 Store 상세 정보 모달 열기
+  const handleStoreSelect = (store: Store) => {
+    setSelectedStoreId(parseInt(store.id));
+    setIsStoreDetailModalOpen(true);
+  };
+
+  // Store 상세 모달에서 리뷰 작성 버튼 클릭
+  const handleWriteReviewFromDetail = (storeId: number) => {
+    const store = stores.find(s => parseInt(s.id) === storeId);
+    if (store) {
+      setReviewStoreId(storeId);
+      setReviewStoreName(store.name);
+      setIsReviewWriteModalOpen(true);
+    }
+  };
+
+  // 리뷰 작성 모달 열기 (기존 호환성)
   const handleWriteReview = (store: Store) => {
     if (!isLoggedIn) {
       toast.error("리뷰를 작성하려면 로그인이 필요합니다.");
@@ -166,6 +189,13 @@ export default function App() {
     ));
 
     toast.success("리뷰가 등록되었습니다!");
+  };
+
+  // 새로운 리뷰 작성 완료 후 콜백
+  const handleReviewSubmitted = () => {
+    // Store 상세 정보를 새로고침하기 위해 모달을 다시 열지는 않지만,
+    // 필요시 여기서 데이터 새로고침 로직을 추가할 수 있습니다.
+    toast.success("리뷰가 성공적으로 등록되었습니다!");
   };
 
 
@@ -239,7 +269,7 @@ export default function App() {
                   <MapView
                     stores={sortedStores}
                     userLocation={userLocation}
-                    onStoreSelect={handleWriteReview}
+                    onStoreSelect={handleStoreSelect}
                   />
                 </div>
                 <div>
@@ -264,6 +294,30 @@ export default function App() {
           onWriteReview={handleWriteReview}
         />
       )}
+
+      <StoreDetailModal
+        storeId={selectedStoreId}
+        isOpen={isStoreDetailModalOpen}
+        onClose={() => {
+          setIsStoreDetailModalOpen(false);
+          setSelectedStoreId(null);
+        }}
+        onWriteReview={handleWriteReviewFromDetail}
+        isLoggedIn={isLoggedIn}
+      />
+
+      <ReviewWriteModal
+        storeId={reviewStoreId}
+        storeName={reviewStoreName}
+        isOpen={isReviewWriteModalOpen}
+        onClose={() => {
+          setIsReviewWriteModalOpen(false);
+          setReviewStoreId(null);
+          setReviewStoreName("");
+        }}
+        onReviewSubmitted={handleReviewSubmitted}
+        authToken={currentUser?.username} // 임시로 username을 토큰으로 사용 (실제로는 JWT 토큰 사용)
+      />
 
       <ReviewModal
         store={selectedStore}

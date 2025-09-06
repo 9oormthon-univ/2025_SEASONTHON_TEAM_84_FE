@@ -1,5 +1,6 @@
 export interface Store {
-  username: string;
+  id: string; // storeId를 문자열로 저장
+  username: string; // 기존 호환성을 위해 유지
   name: string;
   category: string;
   address: string;
@@ -24,6 +25,7 @@ export interface User {
 }
 
 export interface Review {
+  id?: string; // 리뷰 ID 추가
   username: string;
   storeId: string;
   author: string;
