@@ -76,7 +76,7 @@ export interface NearbyStoresResponse {
 // API 클라이언트 함수
 export const fetchNearbyStores = async (request: NearbyStoresRequest): Promise<ApiResponse<NearbyStoresResponse>> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/stores/nearby`, {
+    const response = await fetch(`${API_BASE_URL}/stores/search/nearby`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
