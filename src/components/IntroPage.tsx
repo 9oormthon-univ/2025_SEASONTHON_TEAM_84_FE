@@ -57,7 +57,7 @@ export function IntroPage() {
           </CardHeader>
           <CardContent>
             <p className="text-center text-muted-foreground text-sm">
-              다른 사용자들의 솔직한 리뷰를 보고 직접 리뷰도 남��보세요
+              다른 사용자들의 솔직한 리뷰를 보고 직접 리뷰도 남겨보세요
             </p>
           </CardContent>
         </Card>
