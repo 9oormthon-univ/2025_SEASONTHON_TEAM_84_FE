@@ -1,6 +1,6 @@
 // App.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Header } from "./components/Header";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { MapView } from "./components/MapView";
@@ -40,6 +40,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'intro' | 'map' | 'scrap'>('intro');
   const [selectedCategory, setSelectedCategory] = useState<Category>('전체');
   const [stores, setStores] = useState<Store[]>([]);
+  const [isLoadingStores, setIsLoadingStores] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -52,6 +53,17 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // 앱 시작 시 저장된 토큰으로 자동 로그인 시도
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      // 실제 앱에서는 토큰 유효성 검증 API를 호출해야 합니다.
+      // 여기서는 단순히 토큰이 있으면 로그인 상태로 설정
+      setIsLoggedIn(true);
+      // 사용자 정보는 필요 시 별도 API로 가져와야 함
+    }
+  }, []);
 
   // 위치 정보 가져오기 (기존 코드)
   useEffect(() => {
@@ -78,6 +90,8 @@ export default function App() {
     const fetchStores = async () => {
       if (!userLocation) return;
       
+      setIsLoadingStores(true);
+      
       try {
         const nearbyStores = await getNearbyStores(userLocation, {
           limit: 50, // 더 많은 가게 데이터 가져오기
@@ -98,6 +112,8 @@ export default function App() {
         toast.error("가게 정보를 불러오는데 실패했습니다. 기본 데이터를 표시합니다.");
         // 에러 발생 시 목업 데이터로 폴백
         setStores(mockStores);
+      } finally {
+        setIsLoadingStores(false);
       }
     };
 
@@ -134,11 +150,11 @@ export default function App() {
     toast.info(`${store.name}의 위치를 지도에 표시합니다.`);
   };
 
-  // 마커 클릭 시 Store 상세 정보 모달 열기
-  const handleStoreSelect = (store: Store) => {
+  // 마커 클릭 시 Store 상세 정보 모달 열기 (메모이제이션)
+  const handleStoreSelect = useCallback((store: Store) => {
     setSelectedStoreId(parseInt(store.id));
     setIsStoreDetailModalOpen(true);
-  };
+  }, []);
 
   // Store 상세 모달에서 리뷰 작성 버튼 클릭
   const handleWriteReviewFromDetail = (storeId: number) => {
@@ -228,6 +244,8 @@ export default function App() {
     setIsLoggedIn(false);
     setCurrentUser(null);
     setActiveTab('intro');
+    // 로그아웃 시 토큰 제거
+    localStorage.removeItem('accessToken');
     toast.success("로그아웃되었습니다.");
   };
 
@@ -265,12 +283,20 @@ export default function App() {
           <div className="w-full px-6 py-6">
             <div className="max-w-7xl mx-auto">
               <div className="space-y-6">
-                <div>
+                <div className="relative">
                   <MapView
                     stores={sortedStores}
                     userLocation={userLocation}
                     onStoreSelect={handleStoreSelect}
                   />
+                  {isLoadingStores && (
+                    <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
+                      <div className="bg-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-sm">근처 가게를 찾는 중...</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <StoreList
@@ -316,7 +342,7 @@ export default function App() {
           setReviewStoreName("");
         }}
         onReviewSubmitted={handleReviewSubmitted}
-        authToken={currentUser?.username} // 임시로 username을 토큰으로 사용 (실제로는 JWT 토큰 사용)
+        authToken={localStorage.getItem('accessToken') || undefined} // 실제 JWT 토큰 사용
       />
 
       <ReviewModal
