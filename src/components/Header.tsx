@@ -5,7 +5,7 @@ interface HeaderProps {
   activeTab: 'intro' | 'map' | 'scrap';
   onTabChange: (tab: 'intro' | 'map' | 'scrap') => void;
   isLoggedIn: boolean;
-  userNickname: string | undefined;
+  userNickname: string;
   onLoginClick: () => void;
   onLogoutClick: () => void;
 }
