@@ -30,6 +30,7 @@ export const mapApiStoreToStore = (apiStore: ApiStore): Store => {
 
   return {
     id: apiStore.storeId.toString(),
+    username: apiStore.storeId.toString(), // 기존 호환성을 위해 id와 동일하게 설정
     name: apiStore.storeName,
     category: apiStore.categoryDescription,
     address: apiStore.address.sido + ' ' + apiStore.address.sigun,
