@@ -1,6 +1,6 @@
 // API 클라이언트 설정
 // 개발/배포 환경에 따라 API_BASE_URL을 수정하세요
-const API_BASE_URL = 'http://qualified-swordtail-goormhack84-4dc9e8b7.koyeb.app';
+const API_BASE_URL = 'https://qualified-swordtail-goormhack84-4dc9e8b7.koyeb.app';
 
 // API 요청/응답 타입 정의
 export interface NearbyStoresRequest {
