@@ -175,8 +175,13 @@ export default function App() {
     return Math.round((sum / reviews.length) * 10) / 10;
   };
 
+  // =================================================================
+  // 2. [수정] 탭 변경 핸들러
+  // 'map' 탭은 로그인 없이 접근 가능하도록 조건 변경
+  // =================================================================
   const handleTabChange = (tab: 'intro' | 'map' | 'scrap') => {
-    if ((tab === 'map' || tab === 'scrap') && !isLoggedIn) {
+    // 'scrap' 탭에 접근할 때만 로그인이 되어있는지 확인합니다.
+    if (tab === 'scrap' && !isLoggedIn) {
       setIsLoginModalOpen(true);
       return;
     }
