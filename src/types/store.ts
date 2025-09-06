@@ -17,6 +17,12 @@ export interface Store {
   lng: number; // 경도
 }
 
+export interface User {
+  id: string;
+  password?: string;
+  nickname: string;
+}
+
 export interface Review {
   id: string;
   storeId: string;

@@ -8,7 +8,7 @@ import { LoginModal } from "./components/LoginModal";
 import { IntroPage } from "./components/IntroPage";
 import { ScrapListPage } from "./components/ScrapListPage";
 import { mockStores } from "./data/mockStores";
-import { Store, Review, Category } from "./types/store";
+import { Store, Review, Category, User } from "./types/store";
 import { toast, Toaster } from "sonner";
 
 export default function App() {
@@ -19,6 +19,8 @@ export default function App() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // 위치 정보 가져오기
@@ -122,21 +124,35 @@ export default function App() {
   };
 
   // 로그인 핸들러
-  const handleLogin = () => {
+  const handleLogin = (user: User) => {
     setIsLoggedIn(true);
-    toast.success("카카오톡으로 로그인되었습니다!");
+    setCurrentUser(user);
+    toast.success(`${user.nickname}님, 환영합니다!`);
   };
 
   // 로그아웃 핸들러
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setCurrentUser(null);
     setActiveTab('intro');
     toast.success("로그아웃되었습니다.");
   };
 
+  // 회원가입 핸들러
+  const handleSignUp = (userData: Omit<User, 'id' | 'createdAt'>) => {
+    const newUser: User = {
+      id: `u${Date.now()}`,
+      ...userData,
+      createdAt: new Date().toISOString()
+    };
+    
+    setUsers(prev => [...prev, newUser]);
+    toast.success("회원가입이 완료되었습니다!");
+  };
+
   // 로그인 모달에서 로그인 후 원하던 탭으로 이동
-  const handleLoginAndNavigate = () => {
-    handleLogin();
+  const handleLoginAndNavigate = (user: User) => {
+    handleLogin(user);
     // 현재는 지도로 이동 (원하는 탭 기억하도록 개선 가능)
     setActiveTab('map');
   };
@@ -147,6 +163,7 @@ export default function App() {
         activeTab={activeTab} 
         onTabChange={handleTabChange}
         isLoggedIn={isLoggedIn}
+        userNickname={currentUser?.nickname}
         onLoginClick={() => setIsLoginModalOpen(true)}
         onLogoutClick={handleLogout}
       />
@@ -208,6 +225,8 @@ export default function App() {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLogin={handleLoginAndNavigate}
+        users={users}
+        onSignUp={handleSignUp}
       />
       
       <Toaster position="top-right" />
