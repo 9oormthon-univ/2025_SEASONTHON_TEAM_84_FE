@@ -1,6 +1,4 @@
-// src/components/MapView.tsx
-
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Store } from '../types/store';
 
 interface MapViewProps {
@@ -17,36 +15,17 @@ declare global {
 
 export function MapView({ stores, userLocation, onStoreSelect }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   useEffect(() => {
-    // 이미 kakao 객체가 로드되었는지 확인
-    if (window.kakao && window.kakao.maps && !isMapLoaded) {
-      setIsMapLoaded(true);
+    // kakao 객체와 userLocation이 모두 준비되었는지 확인
+    if (!window.kakao || !userLocation || !mapRef.current) {
       return;
     }
-
-    // kakao 객체가 로드되지 않았다면 스크립트 동적 로딩
-    if (!window.kakao && !isMapLoaded) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=58d78f68d5e7fc7acab9d3dff9ccd0c4&libraries=services`;
-      script.onload = () => {
-        // 스크립트 로딩 완료 후 상태 변경
-        setIsMapLoaded(true);
-      };
-      document.head.appendChild(script);
-    }
-  }, [isMapLoaded]);
-
-  useEffect(() => {
-    // 스크립트 로딩 완료, userLocation, stores 데이터가 있을 때만 실행
-    if (!mapRef.current || !userLocation || !isMapLoaded) return;
 
     // kakao.maps.load() 함수를 사용하여 지도 라이브러리 로드 보장
     window.kakao.maps.load(() => {
       const { kakao } = window;
-
+      
       // 지도 생성
       const map = new kakao.maps.Map(mapRef.current, {
         center: new kakao.maps.LatLng(userLocation.lat, userLocation.lng),
@@ -81,10 +60,14 @@ export function MapView({ stores, userLocation, onStoreSelect }: MapViewProps) {
       map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
     });
 
+    // 컴포넌트 언마운트 시 지도 컨테이너 초기화
     return () => {
-      mapRef.current!.innerHTML = '';
+      if (mapRef.current) {
+        mapRef.current.innerHTML = '';
+      }
     };
-  }, [userLocation, stores, isMapLoaded, onStoreSelect]);
+    
+  }, [userLocation, stores, onStoreSelect]);
 
   return (
     <div className="w-full h-[500px] bg-gray-100 rounded-lg border border-border relative">
