@@ -61,7 +61,7 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
       const user = data;
       const accessToken = data.accessToken;
 
-      if (!user || !user.nickname) {
+      if (!user || !user.username) {
         throw new Error('서버로부터 받은 사용자 정보가 올바르지 않습니다.');
       }
       if (!accessToken) {
@@ -257,6 +257,7 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
     </Dialog>
   );
 }
+
 
 
 
