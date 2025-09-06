@@ -58,7 +58,7 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
         throw new Error(data.message || '로그인에 실패했습니다.');
       }
       
-      const user = data.user;
+      const user = data;
       const accessToken = data.accessToken;
 
       if (!user || !user.nickname) {
@@ -257,5 +257,6 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
     </Dialog>
   );
 }
+
 
 
