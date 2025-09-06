@@ -11,19 +11,20 @@ interface LoginModalProps {
   onClose: () => void;
   onLogin: (user: User) => void;
   users: User[];
-  onSignUp: (userData: Omit<User, 'id' | 'createdAt'>) => void;
+  // User의 모든 정보가 form에서 오므로 User 타입을 직접 사용합니다.
+  onSignUp: (userData: User) => void;
 }
 
 export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginModalProps) {
   // 로그인 폼 상태
   const [loginData, setLoginData] = useState({
-     id: '',
+    id: '',
     password: ''
   });
 
   // 회원가입 폼 상태
   const [signupData, setSignupData] = useState({
-     id: '',
+    id: '',
     password: '',
     confirmPassword: '',
     nickname: ''
@@ -38,19 +39,19 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
     e.preventDefault();
     setLoginError('');
 
-    if (!loginData. id || !loginData.password) {
+    if (!loginData.id || !loginData.password) {
       setLoginError('아이디와 비밀번호를 모두 입력해주세요.');
       return;
     }
 
     const user = users.find(u => 
-      u. id === loginData. id && u.password === loginData.password
+      u.id === loginData.id && u.password === loginData.password
     );
 
     if (user) {
       onLogin(user);
       onClose();
-      setLoginData({  id: '', password: '' });
+      setLoginData({ id: '', password: '' });
     } else {
       setLoginError('아이디 또는 비밀번호가 올바르지 않습니다.');
     }
@@ -61,7 +62,7 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
     e.preventDefault();
     setSignupError('');
 
-    if (!signupData. id || !signupData.password || !signupData.nickname) {
+    if (!signupData.id || !signupData.password || !signupData.nickname) {
       setSignupError('모든 필드를 입력해주세요.');
       return;
     }
@@ -70,14 +71,14 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
       setSignupError('비밀번호가 일치하지 않습니다.');
       return;
     }
-
+    
     if (signupData.password.length < 4) {
       setSignupError('비밀번호는 4자 이상이어야 합니다.');
       return;
     }
 
     // 중복 아이디 체크
-    const existingUser = users.find(u => u. id === signupData. id);
+    const existingUser = users.find(u => u.id === signupData.id);
     if (existingUser) {
       setSignupError('이미 사용 중인 아이디입니다.');
       return;
@@ -90,26 +91,19 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
       return;
     }
 
-    // 회원가입 성공
-    onSignUp({
-       id: signupData. id,
+    // 회원가입 및 자동 로그인을 위한 새 유저 객체 생성
+    const newUser: User = {
+      id: signupData.id,
       password: signupData.password,
       nickname: signupData.nickname
-    });
-
-    // 자동 로그인
-    const newUser: User = {
-      id: `u${Date.now()}`,
-       id: signupData. id,
-      password: signupData.password,
-      nickname: signupData.nickname,
-      createdAt: new Date().toISOString()
     };
     
+    onSignUp(newUser);
     onLogin(newUser);
+    
     onClose();
     setSignupData({
-       id: '',
+      id: '',
       password: '',
       confirmPassword: '',
       nickname: ''
@@ -118,8 +112,8 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
 
   const handleClose = () => {
     onClose();
-    setLoginData({  id: '', password: '' });
-    setSignupData({  id: '', password: '', confirmPassword: '', nickname: '' });
+    setLoginData({ id: '', password: '' });
+    setSignupData({ id: '', password: '', confirmPassword: '', nickname: '' });
     setLoginError('');
     setSignupError('');
   };
@@ -139,16 +133,16 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
             <TabsTrigger value="signup">회원가입</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="login" className="space-y-4">
+          <TabsContent value="login" className="space-y-4 pt-4">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login- id">아이디</Label>
+                <Label htmlFor="login-id">아이디</Label>
                 <Input
-                  id="login- id"
+                  id="login-id"
                   type="text"
                   placeholder="아이디를 입력하세요"
-                  value={loginData. id}
-                  onChange={(e) => setLoginData(prev => ({ ...prev,  id: e.target.value }))}
+                  value={loginData.id}
+                  onChange={(e) => setLoginData(prev => ({ ...prev, id: e.target.value }))}
                 />
               </div>
               
@@ -173,16 +167,16 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
             </form>
           </TabsContent>
           
-          <TabsContent value="signup" className="space-y-4">
+          <TabsContent value="signup" className="space-y-4 pt-4">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup- id">아이디</Label>
+                <Label htmlFor="signup-id">아이디</Label>
                 <Input
-                  id="signup- id"
+                  id="signup-id"
                   type="text"
                   placeholder="아이디를 입력하세요"
-                  value={signupData. id}
-                  onChange={(e) => setSignupData(prev => ({ ...prev,  id: e.target.value }))}
+                  value={signupData.id}
+                  onChange={(e) => setSignupData(prev => ({ ...prev, id: e.target.value }))}
                 />
               </div>
               
@@ -191,7 +185,7 @@ export function LoginModal({ isOpen, onClose, onLogin, users, onSignUp }: LoginM
                 <Input
                   id="signup-password"
                   type="password"
-                  placeholder="비밀번호를 입력하세요"
+                  placeholder="비밀번호 (4자 이상)"
                   value={signupData.password}
                   onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
                 />
