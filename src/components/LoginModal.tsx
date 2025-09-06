@@ -41,7 +41,7 @@ export function LoginModal({ isOpen, onClose, onLogin, onSignUp }: LoginModalPro
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/signin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

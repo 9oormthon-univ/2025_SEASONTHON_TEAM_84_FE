@@ -34,7 +34,6 @@ const deg2rad = (deg: number): number => {
   return deg * (Math.PI / 180);
 }
 
-
 export default function App() {
   const [activeTab, setActiveTab] = useState<'intro' | 'map' | 'scrap'>('intro');
   const [selectedCategory, setSelectedCategory] = useState<Category>('전체');
